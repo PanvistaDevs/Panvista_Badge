@@ -42,72 +42,71 @@
 
 
 
-#define WAKEUP_BUTTON_PIN								BUTTON_0                                    
-#define LEDBUTTON_BUTTON_PIN_NO					BUTTON_1                                    
-#define SEND_INTEGER_BUTTON_PIN_NR			BUTTON_2                                   
+#define WAKEUP_BUTTON_PIN               BUTTON_0                                    
+#define LEDBUTTON_BUTTON_PIN_NO         BUTTON_1                                    
+#define SEND_INTEGER_BUTTON_PIN_NR      BUTTON_2                                   
 
-#define CENTRAL_LINK_COUNT							1                               /**<number of central links used by the application. When changing this number remember to adjust the RAM settings*/
-#define PERIPHERAL_LINK_COUNT						0                               /**<number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
+#define CENTRAL_LINK_COUNT      1                               /**<number of central links used by the application. When changing this number remember to adjust the RAM settings*/
+#define PERIPHERAL_LINK_COUNT   0                               /**<number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
-#define UART_TX_BUF_SIZE								256                             /**< UART TX buffer size. */
-#define UART_RX_BUF_SIZE								256                             /**< UART RX buffer size. */
+#define UART_TX_BUF_SIZE        256                             /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE        256                             /**< UART RX buffer size. */
                                                                 
-#define NUS_SERVICE_UUID_TYPE						BLE_UUID_TYPE_VENDOR_BEGIN      /**< UUID type for the Nordic UART Service (vendor specific). */
+#define NUS_SERVICE_UUID_TYPE   BLE_UUID_TYPE_VENDOR_BEGIN      /**< UUID type for the Nordic UART Service (vendor specific). */
                                                                 
-#define APP_TIMER_PRESCALER							256                          		/**< Value of the RTC1 PRESCALER register. */
-#define APP_TIMER_OP_QUEUE_SIZE					4                               /**< Size of timer operation queues. */
-#define APP_TIMER_MAX_TIMERS						1     													// Maximum number of timers in this application.                                                                
+#define APP_TIMER_PRESCALER     256                          		/**< Value of the RTC1 PRESCALER register. */
+#define APP_TIMER_OP_QUEUE_SIZE 4                               /**< Size of timer operation queues. */
+#define APP_TIMER_MAX_TIMERS    1     													// Maximum number of timers in this application.                                                                
+#define APPL_LOG                printf                   				/**< Debug logger macro that will be used in this file to do logging of debug information over UART. */
 
-#define DEVICE_NAME											"pvbadge"            		/**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "pvbadge"            		/**< Name of device. Will be included in the advertising data. */
 
-#define APP_ADV_INTERVAL								160                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
-#define APP_ADV_TIMEOUT_IN_SECONDS			0                       /**< The advertising timeout (in units of seconds). */
+#define APP_ADV_INTERVAL                160                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
+#define APP_ADV_TIMEOUT_IN_SECONDS      0                       /**< The advertising timeout (in units of seconds). */
 
-#define SCAN_INTERVAL										0x00C8                          /**< Determines scan interval in units of 0.625 millisecond. */
-#define SCAN_WINDOW											0x0050                          /**< Determines scan window in units of 0.625 millisecond. */
-#define SCAN_ACTIVE											1                               /**< If 1, performe active scanning (scan requests). */
-#define SCAN_SELECTIVE									0                               /**< If 1, ignore unknown devices (non whitelisted). */
-#define SCAN_TIMEOUT										0x01A4                          
+#define SCAN_INTERVAL           0x00C8                          /**< Determines scan interval in units of 0.625 millisecond. */
+#define SCAN_WINDOW             0x0050                          /**< Determines scan window in units of 0.625 millisecond. */
+#define SCAN_ACTIVE             1                               /**< If 1, performe active scanning (scan requests). */
+#define SCAN_SELECTIVE          0                               /**< If 1, ignore unknown devices (non whitelisted). */
+#define SCAN_TIMEOUT            0x01A4                          
 
-#define BUTTON_DETECTION_DELAY					APP_TIMER_TICKS(50, APP_TIMER_PRESCALER)    /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
+#define BUTTON_DETECTION_DELAY          APP_TIMER_TICKS(50, APP_TIMER_PRESCALER)    /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
 
-static ble_nus_c_t											m_ble_nus_c;
-static ble_db_discovery_t								m_ble_db_discovery;
+static ble_nus_c_t              m_ble_nus_c;
+static ble_db_discovery_t       m_ble_db_discovery;
 
-uint8_t pstorage_wait_flag							= 0;
-pstorage_block_t pstorage_wait_handle		= 0;
-bool payload_flag												= false;
+static volatile uint8_t pstorage_wait_flag 					 = 0;
+static pstorage_block_t pstorage_wait_handle = 0;
+bool   payload_flag 												 = false;
 
-uint32_t current_app_tick, 
-				 payload_tick;
-
-uint8_t upload_tick[4];
-
-pstorage_handle_t handle;
-pstorage_handle_t block_0_handle;
+pstorage_handle_t       handle;
+pstorage_handle_t				block_0_handle;
 pstorage_module_param_t param;
 
-uint8_t device_info[10] = {0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, NULL};
-uint8_t dest_data_0[10];
-uint8_t adv_storage[100][9] = {{NULL,}};
-uint8_t adv_read[7];
+uint8_t                 device_info[10] = {0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, NULL};
+uint8_t                 dest_data_0[10];
+
+uint32_t 	current_app_tick,
+					payload_tick,
+					adv_read[7];
 
 static const ble_gap_scan_params_t m_scan_params = 
-{
-	.active      = SCAN_ACTIVE,
-	.selective   = SCAN_SELECTIVE,
-	.p_whitelist = NULL,
-	.interval    = SCAN_INTERVAL,
-	.window      = SCAN_WINDOW,
-	.timeout     = SCAN_TIMEOUT
-};
+  {
+    .active      = SCAN_ACTIVE,
+    .selective   = SCAN_SELECTIVE,
+    .p_whitelist = NULL,
+    .interval    = SCAN_INTERVAL,
+    .window      = SCAN_WINDOW,
+    .timeout     = SCAN_TIMEOUT
+  };
 
 static const ble_uuid_t m_nus_uuid = 
-{
-	.uuid = BLE_UUID_NUS_SERVICE,
-	.type = NUS_SERVICE_UUID_TYPE	
-};
+  {
+    .uuid = BLE_UUID_NUS_SERVICE,
+    .type = NUS_SERVICE_UUID_TYPE	
+  };
 	
+
 static void power_manage(void)
 {
     uint32_t err_code = sd_app_evt_wait();
@@ -267,7 +266,7 @@ static void pstorage_handler(pstorage_handle_t  * handle,
                                uint32_t             result,
                                uint8_t            * p_data,
                                uint32_t             data_len)
-{
+{		
 		if(handle->block_id == pstorage_wait_handle) { pstorage_wait_flag = 0;}
 		
 		switch(op_code)
@@ -341,7 +340,7 @@ void pstorage_store_block()
 		pstorage_wait_handle = block_0_handle.block_id;
 		pstorage_wait_flag = 1;
 
-		pstorage_store(&block_0_handle, device_info, 10, 0);
+		pstorage_store(&block_0_handle, device_info, 9, 0);
 		while(pstorage_wait_flag) { power_manage(); }
 }
 
@@ -364,114 +363,17 @@ void pstorage_load_block()
 
 void pstorage_update_block(uint32_t source_data)
 {
-		uint8_t current_app_tick[4] = {(source_data >> 24) & 0xFF, 
-																	 (source_data >> 16) & 0xFF, 
-																	 (source_data >> 8) & 0xFF, 
-																	 (source_data >> 0) & 0xFF};
+		uint8_t 	upload_tick[4] = {(source_data >> 24) & 0xFF, 
+																(source_data >> 16) & 0xFF, 
+																(source_data >> 8) & 0xFF, 
+																(source_data >> 0) & 0xFF};
     
 		pstorage_block_identifier_get(&handle, 0, &block_0_handle);
     pstorage_wait_handle = block_0_handle.block_id;
     pstorage_wait_flag = 1;
-    pstorage_update(&block_0_handle, current_app_tick, 4,4);
+    pstorage_update(&block_0_handle, upload_tick, 4,4);
 		while(pstorage_wait_flag) { power_manage(); }
-}
-
-
-static void printf_beacon_data_ram()
-{
-		uint32_t adv_storage_count = sizeof(adv_storage)/9;
-		uint8_t i;
-	
-		for (i = 0; i < adv_storage_count; i++ ) 
-		{
-				if(adv_storage[i][0] == 0x00 && adv_storage[i][1] == 0x00 
-						 && adv_storage[i][2] == 0x00 &&  adv_storage[i][3] == 0x00
-					)
-				{
-						break;
-				}
-			SEGGER_RTT_printf(0, "[%02d]:[%02x%02x %02x%02x %02x%02x %02x%02x]\n",
-									 i, adv_storage[i][0],adv_storage[i][1],
-									 adv_storage[i][2],adv_storage[i][3],
-									 adv_storage[i][4],adv_storage[i][5],
-					         adv_storage[i][6],adv_storage[i][7]);
-		}
-}
-
-int find_beacon_data_ram()
-{
-		uint32_t adv_storage_count = sizeof(adv_storage)/9;
-		uint8_t i;
-	
-		for (i = 0; i < adv_storage_count; i++ ) 
-		{
-				if(adv_read[2] == adv_storage[i][0] && adv_read[3] == adv_storage[i][1] 
-					 && adv_read[4] == adv_storage[i][2] && adv_read[5] == adv_storage[i][3]
-					)
-				{
-						return i;
-				}
-		}
-		
-		return -1;
-}
-
-int find_end_beacon_data_ram()
-{
-		uint32_t adv_storage_count = sizeof(adv_storage)/9;
-		uint8_t i;
-	
-		for (i = 0; i < adv_storage_count; i++ ) 
-		{
-				if(adv_storage[i][0] == 0x00 && adv_storage[i][1] == 0x00 
-					 && adv_storage[i][2] == 0x00 &&  adv_storage[i][3] == 0x00
-					)
-				{
-						return i;
-				}
-		}
-		
-		return -1;
-}
-
-static void store_beacon_data_ram()
-{
-		uint32_t adv_storage_count	= sizeof(adv_storage)/9;
-		int 		 store_index				= find_beacon_data_ram();
-	
-		if(adv_read[2] == 0x00 && adv_read[3] == 0x00 && adv_read[4] == 0x00 && adv_read[5] == 0x00) { return; }
-		
-		if (store_index == -1)
-		{
-				int end_index = find_end_beacon_data_ram();
-				
-				adv_storage[end_index][0] = adv_read[2];
-				adv_storage[end_index][1] = adv_read[3];
-				adv_storage[end_index][2] = adv_read[4];
-				adv_storage[end_index][3] = adv_read[5];
-				adv_storage[end_index][4] = adv_read[0];
-				adv_storage[end_index][5] = adv_read[1];
-				adv_storage[end_index][6] = adv_read[0];
-				adv_storage[end_index][7] = adv_read[1];
-		}
-		else if(store_index >= 0)
-		{
-				adv_storage[store_index][6] = adv_read[0];
-				adv_storage[store_index][7] = adv_read[1];
-		}
-}
-
-static void print_beacon_adv()
-{
-		SEGGER_RTT_printf(0,"[%d][%02x%02x%02x%02x]:",
-													current_app_tick/128,
-													upload_tick[0], upload_tick[1], upload_tick[2], upload_tick[3]);
-	
-		SEGGER_RTT_printf(0,"[%03d] Time: %02x%02x Major: %02x%02x, Minor: %02x%02x\n", 
-											payload_tick, adv_read[0], adv_read[1], 
-																		adv_read[2], adv_read[3], 
-																		adv_read[4], adv_read[5]);
-}
+ }
 
 static bool is_uuid_present(const ble_uuid_t *p_target_uuid, 
                             const ble_gap_evt_adv_report_t *p_adv_report)
@@ -481,17 +383,18 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 	
     while (index < p_adv_report->dlen)
     {
-        uint8_t 	field_length	= p_data[index],
-									beacon_type 	= 7;
+        uint8_t 	field_length = p_data[index],
+									upload_tick[4],
+									beacon_type = 7;
 
 				if (p_adv_report->rssi > -50) {
 						app_timer_cnt_get(&current_app_tick);
-						payload_tick = (current_app_tick/128) % 240;
+						payload_tick = (current_app_tick/125) % 240;
 
-						upload_tick[0] = ((current_app_tick/128) >> 24) & 0xFF;
-						upload_tick[1] = ((current_app_tick/128) >> 16) & 0xFF;
-						upload_tick[2] = ((current_app_tick/128) >> 8) & 0xFF;
-						upload_tick[3] = ((current_app_tick/128) >> 0) & 0xFF;
+						upload_tick[0] = ((current_app_tick/125) >> 24) & 0xFF;
+						upload_tick[1] = ((current_app_tick/125) >> 16) & 0xFF;
+						upload_tick[2] = ((current_app_tick/125) >> 8) & 0xFF;
+						upload_tick[3] = ((current_app_tick/125) >> 0) & 0xFF;
 		
 						adv_read[0] = (payload_tick >> 8) & 0xFF;
 						adv_read[1] = (payload_tick >> 0) & 0xFF;	
@@ -499,28 +402,44 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 						if (p_adv_report->data[beacon_type] == 0x02 
 								&& p_adv_report->data[beacon_type+1] == 0x15
 							 )
-						{
+						{																
+								SEGGER_RTT_printf(0,"[%d][%02x%02x%02x%02x]:", 
+													current_app_tick/125,
+													upload_tick[0], upload_tick[1], 
+													upload_tick[2], upload_tick[3]);
+								SEGGER_RTT_printf(0,"[%03d] ", payload_tick);
+							
 								adv_read[2] = p_adv_report->data[25];
 								adv_read[3] = p_adv_report->data[26];
 								adv_read[4] = p_adv_report->data[27];
 								adv_read[5] = p_adv_report->data[28];
 								adv_read[6] = NULL;
-							
-								store_beacon_data_ram();
-								print_beacon_adv();
+								
+								SEGGER_RTT_printf(0,"Time: %02x%02x Major: %02x%02x, Minor: %02x%02x\n", 
+												adv_read[0], adv_read[1], 
+												adv_read[2], adv_read[3], 
+												adv_read[4], adv_read[5]);
 						}
 						else if (p_adv_report->data[beacon_type] == 0x00 
 										 && p_adv_report->data[beacon_type+1] == 0x99
-										)
-						{																					
+										) 
+						{								
+								SEGGER_RTT_printf(0,"[%d][%02x%02x%02x%02x]:",
+													current_app_tick/125,
+													upload_tick[0], upload_tick[1], 
+													upload_tick[2], upload_tick[3]);
+								SEGGER_RTT_printf(0,"[%03d] ", payload_tick);
+													
 								adv_read[2] = p_adv_report->data[26];
 								adv_read[3] = p_adv_report->data[27];
 								adv_read[4] = p_adv_report->data[28];
 								adv_read[5] = p_adv_report->data[29];
 								adv_read[6] = NULL;
-							
-								store_beacon_data_ram();
-								print_beacon_adv();
+								
+								SEGGER_RTT_printf(0,"Time: %02x%02x Major: %02x%02x, Minor: %02x%02x\n", 
+												adv_read[0], adv_read[1], 
+												adv_read[2], adv_read[3], 
+												adv_read[4], adv_read[5]);
 						}
 				}
         index += field_length + 1;
@@ -611,7 +530,6 @@ void bsp_event_handler(bsp_event_t event)
 
 				case 15:
 					SEGGER_RTT_printf(0,"\nButton 3 Pushed: %d\r\n", event);
-					printf_beacon_data_ram();
 					break;
 				
 				case 16:
@@ -623,6 +541,7 @@ void bsp_event_handler(bsp_event_t event)
           break;
     }
 }
+
 
 /**@brief Function for initializing buttons and leds.
  *
@@ -643,11 +562,6 @@ static void buttons_leds_init(bool * p_erase_bonds)
     *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 }
 
-static void record_current_app_time()
-{
-		pstorage_update_block(current_app_tick/128);
-		pstorage_load_block();
-}
 
 int main(void)
 {
@@ -669,7 +583,7 @@ int main(void)
     ble_stack_init();
 	
 		SEGGER_RTT_WriteString(0,"C\r\n");
-		
+	
 		//advertising_init();
 		pstorage_initialization();
 		pstorage_store_block();
@@ -682,11 +596,14 @@ int main(void)
 		
     for (;;)
     {
-				if((current_app_tick/128) % 10 == 0 
-					&&(current_app_tick/128) / 10 > 0
+        app_timer_cnt_get(&current_app_tick);
+			
+				if((current_app_tick/125) % 10 == 0 
+					&&(current_app_tick/125) / 10 > 0
 					) 
 				{
-						record_current_app_time();
+						pstorage_update_block(current_app_tick/125);
+						pstorage_load_block();
 						nrf_delay_ms(1000);
 				}
 				
