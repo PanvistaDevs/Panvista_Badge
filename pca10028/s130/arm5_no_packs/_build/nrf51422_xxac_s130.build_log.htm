@@ -28,23 +28,23 @@ Project File Date:  02/08/2016
 *** Using Compiler 'V5.06 update 1 (build 61)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'nrf51422_xxac_s130'
 compiling main.c...
-..\..\..\main.c(143): warning:  #177-D: variable "flags" was declared but never referenced
+..\..\..\main.c(148): warning:  #177-D: variable "flags" was declared but never referenced
       uint8_t             flags       = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;                                    // Defines how your device is seen (or not seen) by other devices
-..\..\..\main.c(439): warning:  #177-D: variable "adv_storage_count" was declared but never referenced
-                uint32_t adv_storage_count      = sizeof(adv_storage)/9;
-..\..\..\main.c(599): warning:  #177-D: variable "err_code" was declared but never referenced
+..\..\..\main.c(473): warning:  #177-D: variable "adv_storage_count" was declared but never referenced
+                uint32_t adv_storage_count      = sizeof(adv_storage)/8;
+..\..\..\main.c(633): warning:  #177-D: variable "err_code" was declared but never referenced
       uint32_t err_code;
-..\..\..\main.c(690): warning:  #223-D: function "nrf_delay_ms" declared implicitly
+..\..\..\main.c(723): warning:  #223-D: function "nrf_delay_ms" declared implicitly
                                                 nrf_delay_ms(1000);
-..\..\..\main.c(139): warning:  #177-D: function "advertising_init" was declared but never referenced
+..\..\..\main.c(144): warning:  #177-D: function "advertising_init" was declared but never referenced
   static void advertising_init(void)
-..\..\..\main.c(171): warning:  #177-D: function "advertise_connectable_start" was declared but never referenced
+..\..\..\main.c(176): warning:  #177-D: function "advertise_connectable_start" was declared but never referenced
   static void advertise_connectable_start(void){
-..\..\..\main.c(251): warning:  #177-D: function "sleep_mode_enter" was declared but never referenced
+..\..\..\main.c(256): warning:  #177-D: function "sleep_mode_enter" was declared but never referenced
   static void sleep_mode_enter(void)
 ..\..\..\main.c: 7 warnings, 0 errors
 linking...
-Program Size: Code=18756 RO-data=484 RW-data=240 ZI-data=5976  
+Program Size: Code=18764 RO-data=484 RW-data=240 ZI-data=5168  
 FromELF: creating hex file...
 ".\_build\nrf51422_xxac_s130.axf" - 0 Error(s), 7 Warning(s).
 

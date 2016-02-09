@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\_build\nrf51422_xxac_s130.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\_build\nrf51422_xxac_s130.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060061: Last Updated: Tue Feb 09 14:40:35 2016
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060061: Last Updated: Tue Feb 09 16:46:01 2016
 <BR><P>
 <H3>Maximum Stack Usage =        408 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -725,7 +725,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[2c]"></a>bsp_event_handler</STRONG> (Thumb, 110 bytes, Stack size 8 bytes, main.o(i.bsp_event_handler))
-<BR><BR>[Stack]<UL><LI>Max Depth = 376<LI>Call Chain = bsp_event_handler &rArr; printf_beacon_data_ram &rArr; SEGGER_RTT_printf &rArr; SEGGER_RTT_vprintf &rArr; _PrintInt &rArr; _PrintUnsigned &rArr; _StoreChar &rArr; SEGGER_RTT_Write &rArr; SEGGER_RTT_WriteNoLock &rArr; _WriteBlocking
+<BR><BR>[Stack]<UL><LI>Max Depth = 384<LI>Call Chain = bsp_event_handler &rArr; printf_beacon_data_ram &rArr; SEGGER_RTT_printf &rArr; SEGGER_RTT_vprintf &rArr; _PrintInt &rArr; _PrintUnsigned &rArr; _StoreChar &rArr; SEGGER_RTT_Write &rArr; SEGGER_RTT_WriteNoLock &rArr; _WriteBlocking
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bsp_indication_set
 <LI><a href="#[64]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;app_error_handler_bare
@@ -763,13 +763,13 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[20]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[e9]"></a>find_beacon_data_ram</STRONG> (Thumb, 64 bytes, Stack size 20 bytes, main.o(i.find_beacon_data_ram))
+<P><STRONG><a name="[e9]"></a>find_beacon_data_ram</STRONG> (Thumb, 62 bytes, Stack size 20 bytes, main.o(i.find_beacon_data_ram))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = find_beacon_data_ram
 </UL>
 <BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;store_beacon_data_ram
 </UL>
 
-<P><STRONG><a name="[ea]"></a>find_end_beacon_data_ram</STRONG> (Thumb, 52 bytes, Stack size 8 bytes, main.o(i.find_end_beacon_data_ram))
+<P><STRONG><a name="[ea]"></a>find_end_beacon_data_ram</STRONG> (Thumb, 50 bytes, Stack size 8 bytes, main.o(i.find_end_beacon_data_ram))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = find_end_beacon_data_ram
 </UL>
 <BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;store_beacon_data_ram
@@ -791,8 +791,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[1c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SWI2_IRQHandler
 </UL>
 
-<P><STRONG><a name="[20]"></a>main</STRONG> (Thumb, 236 bytes, Stack size 32 bytes, main.o(i.main))
-<BR><BR>[Stack]<UL><LI>Max Depth = 192<LI>Call Chain = main &rArr; pstorage_update_block &rArr; pstorage_update &rArr; cmd_queue_enqueue &rArr; cmd_process &rArr; clear_operation_execute &rArr; sm_state_change &rArr;  cmd_process (Cycle)
+<P><STRONG><a name="[20]"></a>main</STRONG> (Thumb, 232 bytes, Stack size 32 bytes, main.o(i.main))
+<BR><BR>[Stack]<UL><LI>Max Depth = 192<LI>Call Chain = main &rArr; pstorage_update_block_device_info &rArr; pstorage_update &rArr; cmd_queue_enqueue &rArr; cmd_process &rArr; clear_operation_execute &rArr; sm_state_change &rArr;  cmd_process (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;nrf_delay_ms
 <LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bsp_init
@@ -802,7 +802,7 @@ Global Symbols
 <LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;app_timer_init
 <LI><a href="#[64]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;app_error_handler_bare
 <LI><a href="#[5c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SEGGER_RTT_WriteString
-<LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block
+<LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block_device_info
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_store_block
 <LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load_block
 <LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_initialization
@@ -911,7 +911,7 @@ Global Symbols
 <P><STRONG><a name="[e3]"></a>pstorage_block_identifier_get</STRONG> (Thumb, 74 bytes, Stack size 12 bytes, pstorage.o(i.pstorage_block_identifier_get))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = pstorage_block_identifier_get
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block
+<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block_device_info
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_store_block
 <LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load_block
 </UL>
@@ -936,7 +936,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_initialization
 </UL>
 
-<P><STRONG><a name="[c6]"></a>pstorage_initialization</STRONG> (Thumb, 30 bytes, Stack size 8 bytes, main.o(i.pstorage_initialization))
+<P><STRONG><a name="[c6]"></a>pstorage_initialization</STRONG> (Thumb, 32 bytes, Stack size 8 bytes, main.o(i.pstorage_initialization))
 <BR><BR>[Stack]<UL><LI>Max Depth = 60<LI>Call Chain = pstorage_initialization &rArr; pstorage_register &rArr; __aeabi_idivmod &rArr; __aeabi_uidivmod
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_register
@@ -954,15 +954,17 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load_block
 </UL>
 
-<P><STRONG><a name="[c8]"></a>pstorage_load_block</STRONG> (Thumb, 102 bytes, Stack size 32 bytes, main.o(i.pstorage_load_block))
-<BR><BR>[Stack]<UL><LI>Max Depth = 72<LI>Call Chain = pstorage_load_block &rArr; pstorage_load
+<P><STRONG><a name="[c8]"></a>pstorage_load_block</STRONG> (Thumb, 94 bytes, Stack size 16 bytes, main.o(i.pstorage_load_block))
+<BR><BR>[Stack]<UL><LI>Max Depth = 56<LI>Call Chain = pstorage_load_block &rArr; pstorage_load
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load
 <LI><a href="#[e3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_block_identifier_get
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;power_manage
 <LI><a href="#[df]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
-<BR>[Called By]<UL><LI><a href="#[20]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block_device_info
+<LI><a href="#[20]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;printf_beacon_data_ram
 </UL>
 
 <P><STRONG><a name="[e1]"></a>pstorage_register</STRONG> (Thumb, 180 bytes, Stack size 24 bytes, pstorage.o(i.pstorage_register))
@@ -984,7 +986,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_store_block
 </UL>
 
-<P><STRONG><a name="[c7]"></a>pstorage_store_block</STRONG> (Thumb, 64 bytes, Stack size 8 bytes, main.o(i.pstorage_store_block))
+<P><STRONG><a name="[c7]"></a>pstorage_store_block</STRONG> (Thumb, 66 bytes, Stack size 8 bytes, main.o(i.pstorage_store_block))
 <BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = pstorage_store_block &rArr; pstorage_clear &rArr; cmd_queue_enqueue &rArr; cmd_process &rArr; clear_operation_execute &rArr; sm_state_change &rArr;  cmd_process (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_store
@@ -1012,14 +1014,15 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;is_word_aligned
 <LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cmd_queue_enqueue
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block
+<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block_device_info
 </UL>
 
-<P><STRONG><a name="[ca]"></a>pstorage_update_block</STRONG> (Thumb, 70 bytes, Stack size 16 bytes, main.o(i.pstorage_update_block))
-<BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = pstorage_update_block &rArr; pstorage_update &rArr; cmd_queue_enqueue &rArr; cmd_process &rArr; clear_operation_execute &rArr; sm_state_change &rArr;  cmd_process (Cycle)
+<P><STRONG><a name="[ca]"></a>pstorage_update_block_device_info</STRONG> (Thumb, 100 bytes, Stack size 16 bytes, main.o(i.pstorage_update_block_device_info))
+<BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = pstorage_update_block_device_info &rArr; pstorage_update &rArr; cmd_queue_enqueue &rArr; cmd_process &rArr; clear_operation_execute &rArr; sm_state_change &rArr;  cmd_process (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update
 <LI><a href="#[e3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_block_identifier_get
+<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load_block
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;power_manage
 </UL>
 <BR>[Called By]<UL><LI><a href="#[20]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -1118,7 +1121,7 @@ Local Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[64]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;app_error_handler_bare
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block
+<BR>[Called By]<UL><LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_update_block_device_info
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_store_block
 <LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load_block
 <LI><a href="#[20]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -1132,10 +1135,11 @@ Local Symbols
 <BR>[Called By]<UL><LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;is_uuid_present
 </UL>
 
-<P><STRONG><a name="[a6]"></a>printf_beacon_data_ram</STRONG> (Thumb, 90 bytes, Stack size 48 bytes, main.o(i.printf_beacon_data_ram))
-<BR><BR>[Stack]<UL><LI>Max Depth = 368<LI>Call Chain = printf_beacon_data_ram &rArr; SEGGER_RTT_printf &rArr; SEGGER_RTT_vprintf &rArr; _PrintInt &rArr; _PrintUnsigned &rArr; _StoreChar &rArr; SEGGER_RTT_Write &rArr; SEGGER_RTT_WriteNoLock &rArr; _WriteBlocking
+<P><STRONG><a name="[a6]"></a>printf_beacon_data_ram</STRONG> (Thumb, 112 bytes, Stack size 56 bytes, main.o(i.printf_beacon_data_ram))
+<BR><BR>[Stack]<UL><LI>Max Depth = 376<LI>Call Chain = printf_beacon_data_ram &rArr; SEGGER_RTT_printf &rArr; SEGGER_RTT_vprintf &rArr; _PrintInt &rArr; _PrintUnsigned &rArr; _StoreChar &rArr; SEGGER_RTT_Write &rArr; SEGGER_RTT_WriteNoLock &rArr; _WriteBlocking
 </UL>
 <BR>[Calls]<UL><LI><a href="#[5e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SEGGER_RTT_printf
+<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pstorage_load_block
 </UL>
 <BR>[Called By]<UL><LI><a href="#[2c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bsp_event_handler
 </UL>
@@ -1148,7 +1152,7 @@ Local Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> main.o(i.pstorage_initialization)
 </UL>
-<P><STRONG><a name="[c2]"></a>store_beacon_data_ram</STRONG> (Thumb, 98 bytes, Stack size 12 bytes, main.o(i.store_beacon_data_ram))
+<P><STRONG><a name="[c2]"></a>store_beacon_data_ram</STRONG> (Thumb, 94 bytes, Stack size 12 bytes, main.o(i.store_beacon_data_ram))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = store_beacon_data_ram &rArr; find_beacon_data_ram
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ea]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;find_end_beacon_data_ram
