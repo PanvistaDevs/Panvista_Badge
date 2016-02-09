@@ -71,6 +71,9 @@
 
 #define BUTTON_DETECTION_DELAY					APP_TIMER_TICKS(50, APP_TIMER_PRESCALER)    /**< Delay from a GPIOTE event until a button is reported as pushed (in number of timer ticks). */
 
+#define PSTORAGE_BLOCK_SIZE							1024
+#define PSTORAGE_BLOCK_NUMBER						1
+
 static ble_nus_c_t											m_ble_nus_c;
 static ble_db_discovery_t								m_ble_db_discovery;
 
@@ -84,12 +87,14 @@ uint32_t current_app_tick,
 uint8_t upload_tick[4];
 
 pstorage_handle_t handle;
-pstorage_handle_t block_0_handle;
+pstorage_handle_t block_0_handle,
+									block_1_handle;
 pstorage_module_param_t param;
 
-uint8_t device_info[10] = {0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, NULL};
-uint8_t dest_data_0[10];
-uint8_t adv_storage[100][9] = {{NULL,}};
+uint8_t device_info[9] = {0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, NULL};
+uint8_t dest_data_0[40];
+uint8_t adv_storage[4][8] = {{NULL,}};
+uint8_t adv_source[32] = {NULL,};
 uint8_t adv_read[7];
 
 static const ble_gap_scan_params_t m_scan_params = 
@@ -327,8 +332,8 @@ void pstorage_initialization()
 {
 			pstorage_init();
 
-			param.block_size  = 16;
-			param.block_count = 1;
+			param.block_size  = PSTORAGE_BLOCK_SIZE;
+			param.block_count = PSTORAGE_BLOCK_NUMBER;
 			param.cb          = pstorage_handler;
 			pstorage_register(&param, &handle);
 }
@@ -336,12 +341,12 @@ void pstorage_initialization()
 void pstorage_store_block()
 {
     pstorage_block_identifier_get(&handle, 0, &block_0_handle);
-		pstorage_clear(&block_0_handle, 16);
+		pstorage_clear(&block_0_handle, PSTORAGE_BLOCK_SIZE);
 	
 		pstorage_wait_handle = block_0_handle.block_id;
 		pstorage_wait_flag = 1;
 
-		pstorage_store(&block_0_handle, device_info, 10, 0);
+		pstorage_store(&block_0_handle, device_info, 8, 0);
 		while(pstorage_wait_flag) { power_manage(); }
 }
 
@@ -352,17 +357,24 @@ void pstorage_load_block()
 			pstorage_wait_handle = block_0_handle.block_id;
 			pstorage_wait_flag = 1;
 
-			pstorage_load(dest_data_0, &block_0_handle, 9, 0);
+			pstorage_load(dest_data_0, &block_0_handle, sizeof(dest_data_0), 0);
 			while(pstorage_wait_flag) { power_manage(); }
 			printf("pstorage load block 0 :\r\n");
-			printf("[%02x%02x][%02x%02x][%02x%02x%02x%02x]",
+			
+			int i;
+			for (i = 0; i < sizeof(dest_data_0); i ++)
+			{
+					if (i % 8 == 0) { printf("\n"); }
+					printf("%02x ", dest_data_0[i]);
+			}printf("\n");
+			
+			/*printf("[%02x%02x][%02x%02x][%02x%02x%02x%02x]",
 							dest_data_0[0],dest_data_0[1],
 							dest_data_0[2],dest_data_0[3],
-							dest_data_0[4],dest_data_0[5],dest_data_0[6],dest_data_0[7]);
-			printf("\n");
+							dest_data_0[4],dest_data_0[5],dest_data_0[6],dest_data_0[7]);*/
 }
 
-void pstorage_update_block(uint32_t source_data)
+void pstorage_update_block_device_info(uint32_t source_data)
 {
 		uint8_t current_app_tick[4] = {(source_data >> 24) & 0xFF, 
 																	 (source_data >> 16) & 0xFF, 
@@ -372,15 +384,29 @@ void pstorage_update_block(uint32_t source_data)
 		pstorage_block_identifier_get(&handle, 0, &block_0_handle);
     pstorage_wait_handle = block_0_handle.block_id;
     pstorage_wait_flag = 1;
-    pstorage_update(&block_0_handle, current_app_tick, 4,4);
+    pstorage_update(&block_0_handle, current_app_tick, 4, 4);
+		while(pstorage_wait_flag) { power_manage(); }
+		
+    pstorage_wait_flag = 1;
+    pstorage_update(&block_0_handle, adv_source, sizeof(adv_source), 8);
+		while(pstorage_wait_flag) { power_manage(); }
+		
+		pstorage_load_block();
+}
+
+void pstorage_update_block_beacon_date()
+{
+		pstorage_block_identifier_get(&handle, 0, &block_0_handle);
+    pstorage_wait_handle = block_0_handle.block_id;
+    pstorage_wait_flag = 1;
+    pstorage_update(&block_0_handle, adv_source, sizeof(adv_source), 8);
 		while(pstorage_wait_flag) { power_manage(); }
 }
 
-
 static void printf_beacon_data_ram()
 {
-		uint32_t adv_storage_count = sizeof(adv_storage)/9;
-		uint8_t i;
+		uint32_t adv_storage_count = sizeof(adv_storage)/8;
+		int i, j, k = 0;
 	
 		for (i = 0; i < adv_storage_count; i++ ) 
 		{
@@ -390,17 +416,25 @@ static void printf_beacon_data_ram()
 				{
 						break;
 				}
-			SEGGER_RTT_printf(0, "[%02d]:[%02x%02x %02x%02x %02x%02x %02x%02x]\n",
-									 i, adv_storage[i][0],adv_storage[i][1],
-									 adv_storage[i][2],adv_storage[i][3],
-									 adv_storage[i][4],adv_storage[i][5],
-					         adv_storage[i][6],adv_storage[i][7]);
+				
+				for (j = 0; j < 8; j++)  
+				{
+						adv_source[k] = adv_storage[i][j];
+						k++;
+				}
+				SEGGER_RTT_printf(0, "[%02d]:[%02x%02x %02x%02x %02x%02x %02x%02x]\n",
+										 i, adv_storage[i][0],adv_storage[i][1],
+										 adv_storage[i][2],adv_storage[i][3],
+										 adv_storage[i][4],adv_storage[i][5],
+										 adv_storage[i][6],adv_storage[i][7]);
 		}
+		
+		pstorage_load_block();
 }
 
 int find_beacon_data_ram()
 {
-		uint32_t adv_storage_count = sizeof(adv_storage)/9;
+		uint32_t adv_storage_count = sizeof(adv_storage)/8;
 		uint8_t i;
 	
 		for (i = 0; i < adv_storage_count; i++ ) 
@@ -418,7 +452,7 @@ int find_beacon_data_ram()
 
 int find_end_beacon_data_ram()
 {
-		uint32_t adv_storage_count = sizeof(adv_storage)/9;
+		uint32_t adv_storage_count = sizeof(adv_storage)/8;
 		uint8_t i;
 	
 		for (i = 0; i < adv_storage_count; i++ ) 
@@ -436,7 +470,7 @@ int find_end_beacon_data_ram()
 
 static void store_beacon_data_ram()
 {
-		uint32_t adv_storage_count	= sizeof(adv_storage)/9;
+		uint32_t adv_storage_count	= sizeof(adv_storage)/8;
 		int 		 store_index				= find_beacon_data_ram();
 	
 		if(adv_read[2] == 0x00 && adv_read[3] == 0x00 && adv_read[4] == 0x00 && adv_read[5] == 0x00) { return; }
@@ -645,8 +679,7 @@ static void buttons_leds_init(bool * p_erase_bonds)
 
 static void record_current_app_time()
 {
-		pstorage_update_block(current_app_tick/128);
-		pstorage_load_block();
+		pstorage_update_block_device_info(current_app_tick/128);
 }
 
 int main(void)
@@ -682,13 +715,14 @@ int main(void)
 		
     for (;;)
     {
-				if((current_app_tick/128) % 10 == 0 
-					&&(current_app_tick/128) / 10 > 0
+				if((current_app_tick/128) % 11 == 0 
+					&&(current_app_tick/128) / 11 > 0
 					) 
 				{
 						record_current_app_time();
 						nrf_delay_ms(1000);
 				}
+				//pstorage_update_block_beacon_date();
 				
         power_manage();
     }
