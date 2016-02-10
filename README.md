@@ -2,9 +2,12 @@
 
 ##### Requirement
     * nRF51 DK
+    * nRFgo Studio
+    * Master Control Panel
     * Keil uVision version 5.17 prefered
     * Termite
     * Jlink Tools and Drivers
+    * And other tools if needed
 
 =====
 
