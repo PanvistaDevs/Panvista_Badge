@@ -41,7 +41,6 @@
 #include "our_service.h"
 
 
-
 #define WAKEUP_BUTTON_PIN								BUTTON_0                                    
 #define LEDBUTTON_BUTTON_PIN_NO					BUTTON_1                                    
 #define SEND_INTEGER_BUTTON_PIN_NR			BUTTON_2                                   
@@ -55,8 +54,9 @@
 #define NUS_SERVICE_UUID_TYPE						BLE_UUID_TYPE_VENDOR_BEGIN      /**< UUID type for the Nordic UART Service (vendor specific). */
                                                                 
 #define APP_TIMER_PRESCALER							256                          		/**< Value of the RTC1 PRESCALER register. */
+#define APP_TIMER_CONVERTOR             128
 #define APP_TIMER_OP_QUEUE_SIZE					4                               /**< Size of timer operation queues. */
-#define APP_TIMER_MAX_TIMERS						1     													// Maximum number of timers in this application.                                                                
+#define APP_TIMER_MAX_TIMERS						1     													// Maximum number of timers in this application.
 
 #define DEVICE_NAME											"pvbadge"            		/**< Name of device. Will be included in the advertising data. */
 
@@ -74,6 +74,11 @@
 #define PSTORAGE_BLOCK_SIZE							1024
 #define PSTORAGE_BLOCK_NUMBER						1
 
+#define NUMBER_OF_BEACONS               10												/**< Number of rows in Beacon Table>**/
+
+#define UPLOAD_APP_TIME									17												/**< Every 17 seconds, upload current tick on pstorage >**/
+#define UPLOAD_BEACON_DATA_TIME					240												/**< Every 240 seconds, upload beacon data >**/
+
 static ble_nus_c_t											m_ble_nus_c;
 static ble_db_discovery_t								m_ble_db_discovery;
 
@@ -87,14 +92,13 @@ uint32_t current_app_tick,
 uint8_t upload_tick[4];
 
 pstorage_handle_t handle;
-pstorage_handle_t block_0_handle,
-									block_1_handle;
+pstorage_handle_t block_0_handle;
 pstorage_module_param_t param;
 
 uint8_t device_info[9] = {0x01, 0x02, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, NULL};
-uint8_t dest_data_0[40];
-uint8_t adv_storage[4][8] = {{NULL,}};
-uint8_t adv_source[32] = {NULL,};
+uint8_t dest_data_0[(NUMBER_OF_BEACONS * 8) + 8];
+uint8_t beacon_table[NUMBER_OF_BEACONS][8] = {{NULL,},};
+uint8_t raw_beacon_table[NUMBER_OF_BEACONS * 8] = {NULL,};
 uint8_t adv_read[7];
 
 static const ble_gap_scan_params_t m_scan_params = 
@@ -132,8 +136,8 @@ static void scan_start(void)
 
 static void scan_stop()
 {
-	SEGGER_RTT_WriteString(0,"\nScan stopped\r\n");
-	sd_ble_gap_scan_stop();
+		SEGGER_RTT_WriteString(0,"\nScan stopped\r\n");
+		sd_ble_gap_scan_stop();
 }
 
 /**@brief Function for initializing the Advertising functionality.
@@ -338,10 +342,15 @@ void pstorage_initialization()
 			pstorage_register(&param, &handle);
 }
 
+void pstorage_clear_block()
+{
+		pstorage_clear(&block_0_handle, PSTORAGE_BLOCK_SIZE);
+}
+
 void pstorage_store_block()
 {
     pstorage_block_identifier_get(&handle, 0, &block_0_handle);
-		pstorage_clear(&block_0_handle, PSTORAGE_BLOCK_SIZE);
+		pstorage_clear_block();
 	
 		pstorage_wait_handle = block_0_handle.block_id;
 		pstorage_wait_flag = 1;
@@ -361,86 +370,76 @@ void pstorage_load_block()
 			while(pstorage_wait_flag) { power_manage(); }
 			printf("pstorage load block 0 :\r\n");
 			
-			int i;
+			uint8_t i;
 			for (i = 0; i < sizeof(dest_data_0); i ++)
 			{
+					if (i > 7 && i < (sizeof(dest_data_0) - 4) 
+						 && dest_data_0[i] == 0x00 && dest_data_0[i+1] == 0x00 
+						 && dest_data_0[i+2] == 0x00 && dest_data_0[i+3] == 0x00
+						 ) 
+					{ break; }
+					
 					if (i % 8 == 0) { printf("\n"); }
 					printf("%02x ", dest_data_0[i]);
-			}printf("\n");
-			
-			/*printf("[%02x%02x][%02x%02x][%02x%02x%02x%02x]",
-							dest_data_0[0],dest_data_0[1],
-							dest_data_0[2],dest_data_0[3],
-							dest_data_0[4],dest_data_0[5],dest_data_0[6],dest_data_0[7]);*/
+					nrf_delay_ms(10);
+			} printf("\n\n");
 }
 
 void pstorage_update_block_device_info(uint32_t source_data)
 {
-		uint8_t current_app_tick[4] = {(source_data >> 24) & 0xFF, 
-																	 (source_data >> 16) & 0xFF, 
-																	 (source_data >> 8) & 0xFF, 
-																	 (source_data >> 0) & 0xFF};
-    
+    device_info[4] = (source_data >> 24) & 0xFF;
+		device_info[5] = (source_data >> 16) & 0xFF;
+		device_info[6] = (source_data >> 8) & 0xFF;
+		device_info[7] = (source_data >> 0) & 0xFF;
+																	 
 		pstorage_block_identifier_get(&handle, 0, &block_0_handle);
     pstorage_wait_handle = block_0_handle.block_id;
-    pstorage_wait_flag = 1;
-    pstorage_update(&block_0_handle, current_app_tick, 4, 4);
-		while(pstorage_wait_flag) { power_manage(); }
 		
-    pstorage_wait_flag = 1;
-    pstorage_update(&block_0_handle, adv_source, sizeof(adv_source), 8);
+		pstorage_wait_flag = 1;
+    pstorage_update(&block_0_handle, device_info, 8, 0);
 		while(pstorage_wait_flag) { power_manage(); }
-		
-		pstorage_load_block();
 }
 
-void pstorage_update_block_beacon_date()
+void pstorage_update_block_beacon_data()
 {
 		pstorage_block_identifier_get(&handle, 0, &block_0_handle);
     pstorage_wait_handle = block_0_handle.block_id;
     pstorage_wait_flag = 1;
-    pstorage_update(&block_0_handle, adv_source, sizeof(adv_source), 8);
+    pstorage_update(&block_0_handle, raw_beacon_table, sizeof(raw_beacon_table), 8);
 		while(pstorage_wait_flag) { power_manage(); }
 }
 
 static void printf_beacon_data_ram()
 {
-		uint32_t adv_storage_count = sizeof(adv_storage)/8;
-		int i, j, k = 0;
+		uint32_t number_of_rows = sizeof(beacon_table)/8;
+		uint8_t i;
 	
-		for (i = 0; i < adv_storage_count; i++ ) 
+		for (i = 0; i < number_of_rows; i++ ) 
 		{
-				if(adv_storage[i][0] == 0x00 && adv_storage[i][1] == 0x00 
-						 && adv_storage[i][2] == 0x00 &&  adv_storage[i][3] == 0x00
+				if(beacon_table[i][0] == 0x00 && beacon_table[i][1] == 0x00 
+						 && beacon_table[i][2] == 0x00 &&  beacon_table[i][3] == 0x00
 					)
 				{
 						break;
 				}
-				
-				for (j = 0; j < 8; j++)  
-				{
-						adv_source[k] = adv_storage[i][j];
-						k++;
-				}
+
 				SEGGER_RTT_printf(0, "[%02d]:[%02x%02x %02x%02x %02x%02x %02x%02x]\n",
-										 i, adv_storage[i][0],adv_storage[i][1],
-										 adv_storage[i][2],adv_storage[i][3],
-										 adv_storage[i][4],adv_storage[i][5],
-										 adv_storage[i][6],adv_storage[i][7]);
+												 i, beacon_table[i][0],beacon_table[i][1],
+												 beacon_table[i][2],beacon_table[i][3],
+												 beacon_table[i][4],beacon_table[i][5],
+												 beacon_table[i][6],beacon_table[i][7]);
 		}
-		
-		pstorage_load_block();
 }
 
 int find_beacon_data_ram()
 {
-		uint32_t adv_storage_count = sizeof(adv_storage)/8;
+		uint32_t number_of_rows = sizeof(beacon_table)/8;
 		uint8_t i;
 	
-		for (i = 0; i < adv_storage_count; i++ ) 
+		for (i = 0; i < number_of_rows; i++ ) 
 		{
-				if(adv_read[2] == adv_storage[i][0] && adv_read[3] == adv_storage[i][1] 
-					 && adv_read[4] == adv_storage[i][2] && adv_read[5] == adv_storage[i][3]
+				if(adv_read[2] == beacon_table[i][0] && adv_read[3] == beacon_table[i][1] 
+					 && adv_read[4] == beacon_table[i][2] && adv_read[5] == beacon_table[i][3]
 					)
 				{
 						return i;
@@ -452,13 +451,13 @@ int find_beacon_data_ram()
 
 int find_end_beacon_data_ram()
 {
-		uint32_t adv_storage_count = sizeof(adv_storage)/8;
+		uint32_t number_of_rows = sizeof(beacon_table)/8;
 		uint8_t i;
 	
-		for (i = 0; i < adv_storage_count; i++ ) 
+		for (i = 0; i < number_of_rows; i++ ) 
 		{
-				if(adv_storage[i][0] == 0x00 && adv_storage[i][1] == 0x00 
-					 && adv_storage[i][2] == 0x00 &&  adv_storage[i][3] == 0x00
+				if(beacon_table[i][0] == 0x00 && beacon_table[i][1] == 0x00 
+					 && beacon_table[i][2] == 0x00 &&  beacon_table[i][3] == 0x00
 					)
 				{
 						return i;
@@ -470,8 +469,7 @@ int find_end_beacon_data_ram()
 
 static void store_beacon_data_ram()
 {
-		uint32_t adv_storage_count	= sizeof(adv_storage)/8;
-		int 		 store_index				= find_beacon_data_ram();
+		int store_index = find_beacon_data_ram();
 	
 		if(adv_read[2] == 0x00 && adv_read[3] == 0x00 && adv_read[4] == 0x00 && adv_read[5] == 0x00) { return; }
 		
@@ -479,27 +477,65 @@ static void store_beacon_data_ram()
 		{
 				int end_index = find_end_beacon_data_ram();
 				
-				adv_storage[end_index][0] = adv_read[2];
-				adv_storage[end_index][1] = adv_read[3];
-				adv_storage[end_index][2] = adv_read[4];
-				adv_storage[end_index][3] = adv_read[5];
-				adv_storage[end_index][4] = adv_read[0];
-				adv_storage[end_index][5] = adv_read[1];
-				adv_storage[end_index][6] = adv_read[0];
-				adv_storage[end_index][7] = adv_read[1];
+				beacon_table[end_index][0] = adv_read[2];
+				beacon_table[end_index][1] = adv_read[3];
+				beacon_table[end_index][2] = adv_read[4];
+				beacon_table[end_index][3] = adv_read[5];
+				beacon_table[end_index][4] = adv_read[0];
+				beacon_table[end_index][5] = adv_read[1];
+				beacon_table[end_index][6] = adv_read[0];
+				beacon_table[end_index][7] = adv_read[1];
 		}
 		else if(store_index >= 0)
 		{
-				adv_storage[store_index][6] = adv_read[0];
-				adv_storage[store_index][7] = adv_read[1];
+				beacon_table[store_index][6] = adv_read[0];
+				beacon_table[store_index][7] = adv_read[1];
 		}
+}
+
+static void clear_beacon_data_ram()
+{
+		uint32_t number_of_rows = sizeof(beacon_table)/8;
+		int i, j;
+	
+		for (i = 0; i < number_of_rows; i++ ) 
+		{
+				for (j = 0; j < 8; j++)
+				{
+						beacon_table[i][j] = NULL;
+						raw_beacon_table[(i*8)+j] = NULL;
+				}
+		}
+}
+
+static void transform_beacon_table()
+{
+		uint32_t number_of_rows = sizeof(beacon_table)/8;
+		int i, j, k = 0;
+	
+		for (i = 0; i < number_of_rows; i++ ) 
+		{
+				for (j = 0; j < 8; j++)  
+				{
+						raw_beacon_table[k] = beacon_table[i][j];
+						k++;
+				}
+		}
+}
+
+static void record_data_into_pstorage()
+{
+		transform_beacon_table();
+		pstorage_update_block_device_info(current_app_tick/APP_TIMER_CONVERTOR);
+		pstorage_update_block_beacon_data();
+		pstorage_load_block();
 }
 
 static void print_beacon_adv()
 {
 		SEGGER_RTT_printf(0,"[%d][%02x%02x%02x%02x]:",
-													current_app_tick/128,
-													upload_tick[0], upload_tick[1], upload_tick[2], upload_tick[3]);
+											current_app_tick/APP_TIMER_CONVERTOR,
+											upload_tick[0], upload_tick[1], upload_tick[2], upload_tick[3]);
 	
 		SEGGER_RTT_printf(0,"[%03d] Time: %02x%02x Major: %02x%02x, Minor: %02x%02x\n", 
 											payload_tick, adv_read[0], adv_read[1], 
@@ -520,12 +556,12 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 
 				if (p_adv_report->rssi > -50) {
 						app_timer_cnt_get(&current_app_tick);
-						payload_tick = (current_app_tick/128) % 240;
+						payload_tick = (current_app_tick/APP_TIMER_CONVERTOR) % 240;
 
-						upload_tick[0] = ((current_app_tick/128) >> 24) & 0xFF;
-						upload_tick[1] = ((current_app_tick/128) >> 16) & 0xFF;
-						upload_tick[2] = ((current_app_tick/128) >> 8) & 0xFF;
-						upload_tick[3] = ((current_app_tick/128) >> 0) & 0xFF;
+						upload_tick[0] = ((current_app_tick/APP_TIMER_CONVERTOR) >> 24) & 0xFF;
+						upload_tick[1] = ((current_app_tick/APP_TIMER_CONVERTOR) >> 16) & 0xFF;
+						upload_tick[2] = ((current_app_tick/APP_TIMER_CONVERTOR) >> 8) & 0xFF;
+						upload_tick[3] = ((current_app_tick/APP_TIMER_CONVERTOR) >> 0) & 0xFF;
 		
 						adv_read[0] = (payload_tick >> 8) & 0xFF;
 						adv_read[1] = (payload_tick >> 0) & 0xFF;	
@@ -539,9 +575,6 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 								adv_read[4] = p_adv_report->data[27];
 								adv_read[5] = p_adv_report->data[28];
 								adv_read[6] = NULL;
-							
-								store_beacon_data_ram();
-								print_beacon_adv();
 						}
 						else if (p_adv_report->data[beacon_type] == 0x00 
 										 && p_adv_report->data[beacon_type+1] == 0x99
@@ -552,10 +585,10 @@ static bool is_uuid_present(const ble_uuid_t *p_target_uuid,
 								adv_read[4] = p_adv_report->data[28];
 								adv_read[5] = p_adv_report->data[29];
 								adv_read[6] = NULL;
-							
-								store_beacon_data_ram();
-								print_beacon_adv();
 						}
+						
+						store_beacon_data_ram();
+						print_beacon_adv();
 				}
         index += field_length + 1;
     }
@@ -630,7 +663,6 @@ static void ble_stack_init(void)
 
 void bsp_event_handler(bsp_event_t event)
 {
-    uint32_t err_code;
     switch (event)
     {
         case 13:
@@ -677,11 +709,6 @@ static void buttons_leds_init(bool * p_erase_bonds)
     *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 }
 
-static void record_current_app_time()
-{
-		pstorage_update_block_device_info(current_app_tick/128);
-}
-
 int main(void)
 {
 		SEGGER_RTT_WriteString(0,"\nMain started\r\n");
@@ -706,6 +733,7 @@ int main(void)
 		//advertising_init();
 		pstorage_initialization();
 		pstorage_store_block();
+		nrf_delay_ms(100);
 		pstorage_load_block();
 	
     err_code = ble_db_discovery_init();
@@ -715,14 +743,21 @@ int main(void)
 		
     for (;;)
     {
-				if((current_app_tick/128) % 11 == 0 
-					&&(current_app_tick/128) / 11 > 0
-					) 
+				if((current_app_tick/APP_TIMER_CONVERTOR) % UPLOAD_BEACON_DATA_TIME == 0 
+					 &&(current_app_tick/APP_TIMER_CONVERTOR) / UPLOAD_BEACON_DATA_TIME > 0
+					 )
 				{
-						record_current_app_time();
-						nrf_delay_ms(1000);
+						clear_beacon_data_ram();
+						printf("::: Cleaned Beacon table\n");
+						nrf_delay_ms(999);
 				}
-				//pstorage_update_block_beacon_date();
+				else if((current_app_tick/APP_TIMER_CONVERTOR) % UPLOAD_APP_TIME == 0 
+								&&(current_app_tick/APP_TIMER_CONVERTOR) / UPLOAD_APP_TIME > 0
+								) 
+				{
+						record_data_into_pstorage();
+						nrf_delay_ms(999);
+				}
 				
         power_manage();
     }
