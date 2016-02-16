@@ -12,6 +12,8 @@
 
 #include "app_button.h"
 
+#include "device_manager.h"
+
 #include "bsp.h"
 #include "bsp_btn_ble.h"
 #include "boards.h"
@@ -24,6 +26,8 @@
 #include "ble_srv_common.h"
 #include "ble_advertising.h"
 #include "ble_conn_params.h"
+#include "ble_bas.h"
+#include "ble_dis.h"
 
 #include "nordic_common.h"
 #include "nrf.h"
@@ -36,6 +40,7 @@
 #include "pstorage.h"
 
 #include "softdevice_handler.h"
+#include "sensorsim.h"
 
 #include "SEGGER_RTT.h"
 #include "our_service.h"
@@ -59,6 +64,7 @@
 #define APP_TIMER_MAX_TIMERS						1     													// Maximum number of timers in this application.
 
 #define DEVICE_NAME											"pvbadge"            		/**< Name of device. Will be included in the advertising data. */
+#define MANUFACTURER_NAME               "Panvista" 
 
 #define APP_ADV_INTERVAL								160                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS			0                       /**< The advertising timeout (in units of seconds). */
@@ -74,7 +80,7 @@
 #define PSTORAGE_BLOCK_SIZE							1024
 #define PSTORAGE_BLOCK_NUMBER						1
 
-#define NUMBER_OF_BEACONS               10												/**< Number of rows in Beacon Table>**/
+#define NUMBER_OF_BEACONS               100												/**< Number of rows in Beacon Table>**/
 
 #define UPLOAD_APP_TIME									17												/**< Every 17 seconds, upload current tick on pstorage >**/
 #define UPLOAD_BEACON_DATA_TIME					240												/**< Every 240 seconds, upload beacon data >**/
@@ -108,7 +114,7 @@ static const ble_gap_scan_params_t m_scan_params =
 	.p_whitelist = NULL,
 	.interval    = SCAN_INTERVAL,
 	.window      = SCAN_WINDOW,
-	.timeout     = SCAN_TIMEOUT
+	//.timeout     = SCAN_TIMEOUT
 };
 
 static const ble_uuid_t m_nus_uuid = 
@@ -116,7 +122,16 @@ static const ble_uuid_t m_nus_uuid =
 	.uuid = BLE_UUID_NUS_SERVICE,
 	.type = NUS_SERVICE_UUID_TYPE	
 };
-	
+
+/**@brief Function for the Timer initialization.
+ *
+ * @details Initializes the timer module. This creates and starts application timers.
+ */
+static void timers_init(void)
+{
+    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
+}
+
 static void power_manage(void)
 {
     uint32_t err_code = sd_app_evt_wait();
@@ -140,6 +155,20 @@ static void scan_stop()
 		sd_ble_gap_scan_stop();
 }
 
+static void sleep_mode_enter(void)
+{
+    uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
+    APP_ERROR_CHECK(err_code);
+
+    // Prepare wakeup buttons.
+    err_code = bsp_btn_ble_sleep_mode_prepare();
+    APP_ERROR_CHECK(err_code);
+
+    // Go to system-off mode (this function will not return; wakeup will cause a reset).
+    err_code = sd_power_system_off();
+    APP_ERROR_CHECK(err_code);
+}
+
 /**@brief Function for initializing the Advertising functionality.
  *
  * @details Encodes the required advertising data and passes it to the stack.
@@ -160,7 +189,8 @@ static void advertising_init(void)
     
 		SEGGER_RTT_WriteString(0,"2\r\n");
 		
-    advdata.name_type               = BLE_ADVDATA_FULL_NAME;                                             
+    advdata.name_type               = BLE_ADVDATA_FULL_NAME;
+		advdata.include_appearance      = true;		
     advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;                                     // Must be included, but not discussed in this tutorial
     advdata.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]); // Must be included, but not discussed in this tutorial
     advdata.uuids_complete.p_uuids  = adv_uuids;                                // Must be included, but not discussed in this tutorial
@@ -257,20 +287,6 @@ static void uart_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-static void sleep_mode_enter(void)
-{
-    uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    APP_ERROR_CHECK(err_code);
-
-    // Prepare wakeup buttons.
-    err_code = bsp_btn_ble_sleep_mode_prepare();
-    APP_ERROR_CHECK(err_code);
-
-    // Go to system-off mode (this function will not return; wakeup will cause a reset).
-    err_code = sd_power_system_off();
-    APP_ERROR_CHECK(err_code);
-}
-
 static void pstorage_handler(pstorage_handle_t  * handle,
 															 uint8_t              op_code,
                                uint32_t             result,
@@ -284,48 +300,48 @@ static void pstorage_handler(pstorage_handle_t  * handle,
 			case PSTORAGE_LOAD_OP_CODE:
 				 if (result == NRF_SUCCESS)
 				 {
-						 printf("pstorage LOAD callback received \r\n");
+						 SEGGER_RTT_printf(0,"pstorage LOAD callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_ALERT_0);				 
 				 }
 				 else
 				 {
-						 printf("pstorage LOAD ERROR callback received \r\n");
+						 SEGGER_RTT_printf(0,"pstorage LOAD ERROR callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_RCV_ERROR);
 				 }
 				 break;
 			case PSTORAGE_STORE_OP_CODE:
 				 if (result == NRF_SUCCESS)
 				 {
-						 printf("pstorage STORE callback received \r\n");
+						 SEGGER_RTT_printf(0,"pstorage STORE callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_ALERT_1);
 				 }
 				 else
 				 {
-					   printf("pstorage STORE ERROR callback received \r\n");
+					   SEGGER_RTT_printf(0,"pstorage STORE ERROR callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_RCV_ERROR);
 				 }
 				 break;				 
 			case PSTORAGE_UPDATE_OP_CODE:
 				 if (result == NRF_SUCCESS)
 				 {
-						 printf("pstorage UPDATE callback received \r\n");
+						 SEGGER_RTT_printf(0,"pstorage UPDATE callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_ALERT_2);
 				 }
 				 else
 				 {
-						 printf("pstorage UPDATE ERROR callback received \r\n");
+						 SEGGER_RTT_printf(0,"pstorage UPDATE ERROR callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_RCV_ERROR);
 				 }
 				 break;
 			case PSTORAGE_CLEAR_OP_CODE:
 				 if (result == NRF_SUCCESS)
 				 {
-						 printf("pstorage CLEAR callback received \r\n");
+						 SEGGER_RTT_printf(0,"pstorage CLEAR callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_ALERT_3);
 				 }
 				 else
 				 {
-					   printf("pstorage CLEAR ERROR callback received \r\n");
+					   SEGGER_RTT_printf(0,"pstorage CLEAR ERROR callback received \r\n");
 						 bsp_indication_set(BSP_INDICATE_RCV_ERROR);
 				 }
 				 break;		 
@@ -370,7 +386,7 @@ void pstorage_load_block()
 			while(pstorage_wait_flag) { power_manage(); }
 			printf("pstorage load block 0 :\r\n");
 			
-			uint8_t i;
+			int i;
 			for (i = 0; i < sizeof(dest_data_0); i ++)
 			{
 					if (i > 7 && i < (sizeof(dest_data_0) - 4) 
@@ -381,7 +397,7 @@ void pstorage_load_block()
 					
 					if (i % 8 == 0) { printf("\n"); }
 					printf("%02x ", dest_data_0[i]);
-					nrf_delay_ms(10);
+					nrf_delay_ms(5);
 			} printf("\n\n");
 }
 
@@ -476,6 +492,8 @@ static void store_beacon_data_ram()
 		if (store_index == -1)
 		{
 				int end_index = find_end_beacon_data_ram();
+				
+				if (end_index == -1) { return; }
 				
 				beacon_table[end_index][0] = adv_read[2];
 				beacon_table[end_index][1] = adv_read[3];
@@ -667,11 +685,13 @@ void bsp_event_handler(bsp_event_t event)
     {
         case 13:
           SEGGER_RTT_printf(0,"\nButton 1 Pushed: %d\r\n", event);
+					printf("\nButton 1 Pushed: %d\r\n", event);
 					scan_start();
           break;
 
         case 14:
 					SEGGER_RTT_printf(0,"\nButton 2 Pushed: %d\r\n", event);
+					printf("\nButton 2 Pushed: %d\r\n", event);
 					scan_stop();
           break;
 
@@ -711,43 +731,43 @@ static void buttons_leds_init(bool * p_erase_bonds)
 
 int main(void)
 {
+		uint32_t err_code;
+		bool erase_bonds;
+
 		SEGGER_RTT_WriteString(0,"\nMain started\r\n");
-    uint32_t err_code;
-    
 		SEGGER_RTT_WriteString(0,"A\r\n");
-	
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, NULL);
-    //APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
 		
+		app_trace_init();
+		timers_init();
+
 		SEGGER_RTT_WriteString(0,"B\r\n");
 		
-		bool erase_bonds;
 		buttons_leds_init(&erase_bonds);
-	
 	  uart_init();
-	
     ble_stack_init();
+		ble_db_discovery_init();
 	
 		SEGGER_RTT_WriteString(0,"C\r\n");
-		
+
 		//advertising_init();
+
 		pstorage_initialization();
 		pstorage_store_block();
 		nrf_delay_ms(100);
 		pstorage_load_block();
 	
-    err_code = ble_db_discovery_init();
-    APP_ERROR_CHECK(err_code);
-	
 		NRF_RTC1->TASKS_START = 1;
+		scan_start();
 		
     for (;;)
     {
+				app_timer_cnt_get(&current_app_tick);
 				if((current_app_tick/APP_TIMER_CONVERTOR) % UPLOAD_BEACON_DATA_TIME == 0 
 					 &&(current_app_tick/APP_TIMER_CONVERTOR) / UPLOAD_BEACON_DATA_TIME > 0
 					 )
 				{
 						clear_beacon_data_ram();
+						SEGGER_RTT_printf(0,"::: Cleaned Beacon table\n");
 						printf("::: Cleaned Beacon table\n");
 						nrf_delay_ms(999);
 				}
@@ -755,6 +775,7 @@ int main(void)
 								&&(current_app_tick/APP_TIMER_CONVERTOR) / UPLOAD_APP_TIME > 0
 								) 
 				{
+					printf("update at : %d\n", current_app_tick/APP_TIMER_CONVERTOR);
 						record_data_into_pstorage();
 						nrf_delay_ms(999);
 				}
