@@ -27,10 +27,10 @@
 .\_build\main.o: ..\..\..\..\..\..\components\libraries\trace\app_trace.h
 .\_build\main.o: ..\..\..\..\..\..\components\libraries\button\app_button.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_gpio.h
-.\_build\main.o: ..\..\..\..\..\bsp\bsp.h
-.\_build\main.o: ..\..\..\..\..\bsp\boards.h
-.\_build\main.o: ..\..\..\..\..\bsp\pca10028.h
-.\_build\main.o: ..\..\..\..\..\bsp\bsp_btn_ble.h
+.\_build\main.o: ..\..\..\..\..\..\components\ble\device_manager\device_manager.h
+.\_build\main.o: ..\..\..\..\..\..\components\libraries\util\sdk_common.h
+.\_build\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\_build\main.o: ..\..\..\..\..\..\components\libraries\util\sdk_os.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble_ranges.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble_types.h
@@ -40,8 +40,12 @@
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble_gatt.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble_gattc.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble_gatts.h
+.\_build\main.o: ..\..\..\..\..\..\components\ble\device_manager\config\device_manager_cnfg.h
+.\_build\main.o: ..\..\..\..\..\bsp\bsp.h
+.\_build\main.o: ..\..\..\..\..\bsp\boards.h
+.\_build\main.o: ..\..\..\..\..\bsp\pca10028.h
+.\_build\main.o: ..\..\..\..\..\bsp\bsp_btn_ble.h
 .\_build\main.o: ..\..\..\..\..\..\components\ble\common\ble_advdata.h
-.\_build\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 .\_build\main.o: ..\..\..\..\..\..\components\ble\ble_services\ble_nus_c\ble_nus_c.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\s130\headers\ble_hci.h
 .\_build\main.o: ..\..\..\..\..\..\components\ble\ble_db_discovery\ble_db_discovery.h
@@ -49,6 +53,8 @@
 .\_build\main.o: ..\..\..\..\..\..\components\ble\common\ble_gatt_db.h
 .\_build\main.o: ..\..\..\..\..\..\components\ble\ble_advertising\ble_advertising.h
 .\_build\main.o: ..\..\..\..\..\..\components\ble\common\ble_conn_params.h
+.\_build\main.o: ..\..\..\..\..\..\components\ble\ble_services\ble_bas\ble_bas.h
+.\_build\main.o: ..\..\..\..\..\..\components\ble\ble_services\ble_dis\ble_dis.h
 .\_build\main.o: ..\..\..\config\ble_app_uart_c_s130_pca10028\nrf_drv_config.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\config\nrf_drv_config_validation.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\gpiote\nrf_drv_gpiote.h
@@ -68,6 +74,7 @@
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\common\softdevice_handler\ble_stack_handler_types.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\common\softdevice_handler\ant_stack_handler_types.h
 .\_build\main.o: ..\..\..\..\..\..\components\softdevice\common\softdevice_handler\app_ram_base.h
+.\_build\main.o: ..\..\..\..\..\..\components\libraries\sensorsim\sensorsim.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_ext\segger_rtt\SEGGER_RTT.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_ext\segger_rtt\SEGGER_RTT_Conf.h
 .\_build\main.o: ..\..\..\our_service.h

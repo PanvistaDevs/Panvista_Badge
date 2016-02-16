@@ -336,17 +336,17 @@ ARM Macro Assembler    Page 6
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M0 --apcs=interw
 ork --depend=.\_build\arm_startup_nrf51.d -o.\_build\arm_startup_nrf51.o -I"C:\
-Users\Neil L\Documents\GitHub\nRF5_SDK_11.0.0-2.alpha_bc3f6a0\projects\Panvista
-\Panvista_Badge\pca10028\s130\arm5_no_packs\RTE" -IC:\Keil_v5\ARM\PACK\ARM\CMSI
-S\4.5.0\CMSIS\Include -IC:\Keil_v5\ARM\PACK\NordicSemiconductor\nRF_DeviceFamil
-yPack\8.3.1\Device\Include --predefine="__EVAL SETA 1" --predefine="__MICROLIB 
-SETA 1" --predefine="__UVISION_VERSION SETA 517" --predefine="_RTE_ SETA 1" --p
-redefine="NRF51 SETA 1" --predefine="__HEAP_SIZE SETA 0" --predefine="BLE_STACK
-_SUPPORT_REQD SETA 1" --predefine="S130 SETA 1" --predefine="BOARD_PCA10028 SET
-A 1" --predefine="BSP_UART_SUPPORT SETA 1" --predefine="NRF51 SETA 1" --predefi
-ne="SOFTDEVICE_PRESENT SETA 1" --predefine="SWI_DISABLE0 SETA 1" --predefine="N
-RF_LOG_USES_UART SETA 1" --list=.\_build\arm_startup_nrf51.lst RTE\Device\nRF51
-422_xxAC\arm_startup_nrf51.s
+Users\Neil L\Documents\GitHub\nRF5_SDK_11\projects\Panvista\Panvista_Badge\pca1
+0028\s130\arm5_no_packs\RTE" -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Includ
+e -IC:\Keil_v5\ARM\PACK\NordicSemiconductor\nRF_DeviceFamilyPack\8.3.1\Device\I
+nclude --predefine="__EVAL SETA 1" --predefine="__MICROLIB SETA 1" --predefine=
+"__UVISION_VERSION SETA 517" --predefine="_RTE_ SETA 1" --predefine="NRF51 SETA
+ 1" --predefine="__HEAP_SIZE SETA 0" --predefine="BLE_STACK_SUPPORT_REQD SETA 1
+" --predefine="S130 SETA 1" --predefine="BOARD_PCA10028 SETA 1" --predefine="BS
+P_UART_SUPPORT SETA 1" --predefine="NRF51 SETA 1" --predefine="SOFTDEVICE_PRESE
+NT SETA 1" --predefine="SWI_DISABLE0 SETA 1" --predefine="NRF_LOG_USES_UART SET
+A 1" --list=.\_build\arm_startup_nrf51.lst RTE\Device\nRF51422_xxAC\arm_startup
+_nrf51.s
 
 
 
